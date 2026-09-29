@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 
 def load_config():
-    load_dotenv(Path(__file__).with_name(".env"))
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
     host = os.environ["PG_HOST"].strip()
     if not host or "/" in host or "\\" in host or host in (".", ".."):
         raise ValueError("PG_HOST must be a valid single folder name")
@@ -29,5 +29,4 @@ def load_config():
         "obs_access_key": os.environ["OBS_ACCESS_KEY_ID"],
         "obs_secret_key": os.environ["OBS_SECRET_ACCESS_KEY"],
     }
-
 

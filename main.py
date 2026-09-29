@@ -1,7 +1,7 @@
-from logging_utils import setup_logger
-from obs_storage import connect_to_obs, upload_dump
-from postgres_backup import create_dump
-from settings import load_config
+from config.settings import load_config
+from services.obs_storage import connect_to_obs, upload_dump
+from services.postgres_backup import create_dump
+from utils.logging_utils import setup_logger
 
 
 def main():

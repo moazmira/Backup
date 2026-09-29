@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 def create_dump(config, database, logger):
-    output_dir = Path(__file__).with_name("dumps")
+    output_dir = Path(__file__).resolve().parents[1] / "dumps"
     output_dir.mkdir(exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     dump_file = output_dir / f"{database}_{timestamp}.dump"
@@ -38,5 +38,4 @@ def create_dump(config, database, logger):
     logger.info("[%s] Dump created successfully: %s (%d bytes)",
                 database, dump_file, dump_file.stat().st_size)
     return dump_file
-
 

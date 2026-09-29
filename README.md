@@ -2,11 +2,11 @@
 
 ## Project files
 
-- `settings.py`: reads the `.env` configuration.
-- `logging_utils.py`: creates console and file logs.
-- `postgres_backup.py`: creates PostgreSQL dumps.
-- `obs_storage.py`: uploads, verifies, and removes successful local dumps.
-- `backup.py`: runs the steps in order.
+- `config/settings.py`: reads the `.env` configuration.
+- `utils/logging_utils.py`: creates console and file logs.
+- `services/postgres_backup.py`: creates PostgreSQL dumps.
+- `services/obs_storage.py`: uploads, verifies, and removes successful local dumps.
+- `main.py`: runs the steps in order.
 
 Set the PostgreSQL credentials and comma-separated database names in `.env`.
 The script uses `pg_dump` to connect and write one full custom-format dump
@@ -15,7 +15,7 @@ per database to `dumps/`. It uploads each dump to
 size, then removes the local file. If upload or verification fails, the local
 file remains in `dumps/`. Each run writes a separate file in `logs/` and
 also prints those messages to the terminal.
-Log filenames follow `YYYYMMDD_HHMMSS_microseconds_backup.log`.
+Log filenames follow `YYYYMMDD_HHMMSS_microseconds_main.log`.
 
 The filename is `database_YYYYMMDD_HHMMSS.dump`, for example
 `postgres_20260929_135505.dump`. Another run later on the same day gets a
@@ -28,7 +28,7 @@ python3 -m venv .venv
 cp .env.example .env
 chmod 600 .env
 # Edit .env, then run:
-.venv/bin/python backup.py
+.venv/bin/python main.py
 ```
 
 Set `PG_DUMP_PATH` to the installed pg_dump executable and enter OBS settings

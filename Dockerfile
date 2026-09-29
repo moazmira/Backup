@@ -10,5 +10,8 @@ RUN python3 -m venv /opt/backup-venv \
     && /opt/backup-venv/bin/pip install --no-cache-dir -r requirements.txt
 
 COPY *.py ./
+COPY config/ ./config/
+COPY services/ ./services/
+COPY utils/ ./utils/
 
-CMD ["/opt/backup-venv/bin/python", "backup.py"]
+CMD ["/opt/backup-venv/bin/python", "main.py"]

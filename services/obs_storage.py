@@ -64,4 +64,3 @@ def upload_dump(client, config, database, dump_file, logger):
     dump_file.unlink()
     logger.info("[%s] Local dump deleted", database)
 
-
