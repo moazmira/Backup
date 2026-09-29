@@ -11,6 +11,9 @@ from obs import ObsClient
 
 def load_config():
     load_dotenv(Path(__file__).with_name(".env"))
+    host = os.environ["PG_HOST"].strip()
+    if not host or "/" in host or "\\" in host or host in (".", ".."):
+        raise ValueError("PG_HOST must be a valid single folder name")
     databases = [
         name.strip()
         for name in os.environ["PG_DATABASES"].split(",")
@@ -20,7 +23,7 @@ def load_config():
         raise ValueError("PG_DATABASES is empty")
 
     return {
-        "host": os.environ["PG_HOST"],
+        "host": host,
         "port": os.getenv("PG_PORT", "5432"),
         "user": os.environ["PG_USER"],
         "password": os.environ["PG_PASSWORD"],
@@ -109,7 +112,10 @@ def connect_to_obs(config, logger):
 def upload_dump(client, config, database, dump_file, logger):
     # The date is taken from this dump's timestamp so the path matches its name.
     date = dump_file.name[len(database) + 1:][:8]
-    object_key = f"{database}/{date[:4]}/{date[4:6]}/{date[6:8]}/{dump_file.name}"
+    object_key = (
+        f"{config['host']}/{database}/"
+        f"{date[:4]}/{date[4:6]}/{date[6:8]}/{dump_file.name}"
+    )
     bucket = config["obs_bucket"]
     size = dump_file.stat().st_size
     if size > 5 * 1024**3:
