@@ -37,7 +37,7 @@ def load_config():
 def setup_logger():
     log_dir = Path(__file__).with_name("logs")
     log_dir.mkdir(exist_ok=True)
-    run_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_file = log_dir / f"dump_{run_id}_{uuid.uuid4().hex[:6]}.log"
 
     logger = logging.getLogger("postgres_dump")
@@ -53,7 +53,7 @@ def setup_logger():
 def create_dump(config, database, logger):
     output_dir = Path(__file__).with_name("dumps")
     output_dir.mkdir(exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     dump_file = output_dir / f"{database}_{timestamp}_{uuid.uuid4().hex[:6]}.dump"
 
     command = [
