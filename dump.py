@@ -42,7 +42,7 @@ def check_connection(config, database):
 def create_dump(config, database):
     output_dir = Path(__file__).with_name("dumps")
     output_dir.mkdir(exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     dump_file = output_dir / f"{database}_{timestamp}.dump"
 
     command = [
