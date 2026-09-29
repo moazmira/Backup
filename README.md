@@ -31,8 +31,9 @@ chmod 600 .env
 .venv/bin/python main.py
 ```
 
-Set `PG_DUMP_PATH` to the installed pg_dump executable and enter OBS settings
-in `.env`. PostgreSQL 18 servers need a PostgreSQL 18 or newer pg_dump client.
+Set every variable in `.env`, including `PG_PORT` and `PG_DUMP_PATH`.
+Missing settings stop the run immediately. PostgreSQL 18 servers need a
+PostgreSQL 18 or newer pg_dump client.
 The OBS credentials need ListBucket, PutObject, and GetObject permissions.
 The simple OBS putFile upload supports files up to 5 GiB; larger dumps need
 multipart upload.

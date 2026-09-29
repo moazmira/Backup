@@ -19,14 +19,13 @@ def load_config():
 
     return {
         "host": host,
-        "port": os.getenv("PG_PORT", "5432"),
+        "port": os.environ["PG_PORT"],
         "user": os.environ["PG_USER"],
         "password": os.environ["PG_PASSWORD"],
         "databases": databases,
-        "pg_dump": os.getenv("PG_DUMP_PATH", "pg_dump"),
+        "pg_dump": os.environ["PG_DUMP_PATH"],
         "obs_bucket": os.environ["OBS_BUCKET"],
         "obs_endpoint": os.environ["OBS_ENDPOINT"],
         "obs_access_key": os.environ["OBS_ACCESS_KEY_ID"],
         "obs_secret_key": os.environ["OBS_SECRET_ACCESS_KEY"],
     }
-
