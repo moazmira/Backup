@@ -1,9 +1,11 @@
 import os
+import logging
 import subprocess
+import sys
+import uuid
 from datetime import datetime
 from pathlib import Path
 
-import psycopg
 from dotenv import load_dotenv
 
 
@@ -27,22 +29,26 @@ def load_config():
     }
 
 
-def check_connection(config, database):
-    with psycopg.connect(
-        host=config["host"],
-        port=config["port"],
-        user=config["user"],
-        password=config["password"],
-        dbname=database,
-        connect_timeout=10,
-    ) as connection:
-        connection.execute("SELECT 1").fetchone()
+def setup_logger():
+    log_dir = Path(__file__).with_name("logs")
+    log_dir.mkdir(exist_ok=True)
+    run_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    log_file = log_dir / f"dump_{run_id}_{uuid.uuid4().hex[:6]}.log"
+
+    logger = logging.getLogger("postgres_dump")
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+    for handler in (logging.StreamHandler(sys.stdout), logging.FileHandler(log_file)):
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    logger.info("Run started. Log file: %s", log_file)
+    return logger
 
 
-def create_dump(config, database):
+def create_dump(config, database, logger):
     output_dir = Path(__file__).with_name("dumps")
     output_dir.mkdir(exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     dump_file = output_dir / f"{database}_{timestamp}.dump"
 
     command = [
@@ -56,25 +62,35 @@ def create_dump(config, database):
     ]
     env = {**os.environ, "PGPASSWORD": config["password"]}
 
+    logger.info("[%s] Connecting and creating dump: %s", database, dump_file)
     try:
-        subprocess.run(command, env=env, check=True)
-        if dump_file.stat().st_size == 0:
-            raise RuntimeError(f"Dump is empty: {dump_file}")
+        result = subprocess.run(command, env=env, capture_output=True, text=True)
+        if result.returncode:
+            raise RuntimeError(f"pg_dump failed (exit {result.returncode}): {result.stderr.strip()}")
+        if not dump_file.exists() or dump_file.stat().st_size == 0:
+            raise RuntimeError("pg_dump produced an empty or missing dump")
     except Exception:
         dump_file.unlink(missing_ok=True)
         raise
 
+    logger.info("[%s] PostgreSQL connection successful (pg_dump completed)", database)
+    logger.info("[%s] Dump created successfully: %s (%d bytes)",
+                database, dump_file, dump_file.stat().st_size)
     return dump_file
 
 
 def main():
-    config = load_config()
-    for database in config["databases"]:
-        print(f"[{database}] Checking connection...", flush=True)
-        check_connection(config, database)
-        print(f"[{database}] Creating dump...", flush=True)
-        dump_file = create_dump(config, database)
-        print(f"[{database}] Done: {dump_file} ({dump_file.stat().st_size} bytes)", flush=True)
+    logger = setup_logger()
+    try:
+        config = load_config()
+        logger.info("Databases requested: %s", ", ".join(config["databases"]))
+        for database in config["databases"]:
+            logger.info("[%s] Starting backup", database)
+            create_dump(config, database, logger)
+        logger.info("Run completed successfully: %d database(s)", len(config["databases"]))
+    except Exception:
+        logger.exception("Run failed")
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
