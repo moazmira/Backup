@@ -1,2 +1,2 @@
-psycopg[binary]
 python-dotenv
+esdk-obs-python
