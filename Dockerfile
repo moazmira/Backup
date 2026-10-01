@@ -1,4 +1,4 @@
-FROM postgres:18
+FROM postgres:16
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 python3-venv \
@@ -7,11 +7,8 @@ RUN apt-get update \
 WORKDIR /app
 COPY requirements.txt .
 RUN python3 -m venv /opt/backup-venv \
-    && /opt/backup-venv/bin/pip install --no-cache-dir -r requirements.txt
+    && /opt/backup-venv/bin/pip install -r requirements.txt
 
-COPY *.py ./
-COPY config/ ./config/
-COPY services/ ./services/
-COPY utils/ ./utils/
+COPY . .
 
 CMD ["/opt/backup-venv/bin/python", "main.py"]

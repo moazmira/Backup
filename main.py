@@ -13,8 +13,11 @@ def main():
         client = connect_to_obs(config, logger)
         for database in config["databases"]:
             logger.info("[%s] Starting backup", database)
-            dump_file = create_dump(config, database, logger)
-            upload_dump(client, config, database, dump_file, logger)
+            dump_file, dump_timestamp = create_dump(config, database, logger)
+            upload_dump(
+                client, config, database, dump_file, logger,
+                dump_timestamp=dump_timestamp,
+            )
         logger.info("Run completed successfully: %d database(s)", len(config["databases"]))
     except Exception:
         logger.exception("Run failed")

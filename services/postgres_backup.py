@@ -7,7 +7,8 @@ from pathlib import Path
 def create_dump(config, database, logger):
     output_dir = Path(__file__).resolve().parents[1] / "dumps"
     output_dir.mkdir(exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    dump_timestamp = datetime.now()
+    timestamp = dump_timestamp.strftime("%Y%m%d_%H%M%S")
     dump_file = output_dir / f"{database}_{timestamp}.dump"
     if dump_file.exists():
         raise FileExistsError(f"Dump already exists: {dump_file}")
@@ -37,5 +38,5 @@ def create_dump(config, database, logger):
     logger.info("[%s] PostgreSQL connection successful (pg_dump completed)", database)
     logger.info("[%s] Dump created successfully: %s (%d bytes)",
                 database, dump_file, dump_file.stat().st_size)
-    return dump_file
+    return dump_file, dump_timestamp
 

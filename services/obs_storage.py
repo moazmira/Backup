@@ -22,12 +22,11 @@ def connect_to_obs(config, logger):
     return client
 
 
-def upload_dump(client, config, database, dump_file, logger):
-    # The date is taken from this dump's timestamp.
-    date = dump_file.name[len(database) + 1:][:8]
+def upload_dump(client, config, database, dump_file, logger, dump_timestamp):
+    # Use the same timestamp that was used to name the dump.
     object_key = (
         f"{config['host']}/{database}/"
-        f"{date[:4]}/{date[4:6]}/{date[6:8]}/{dump_file.name}"
+        f"{dump_timestamp:%Y/%m/%d}/{dump_file.name}"
     )
 
     bucket = config["obs_bucket"]
@@ -58,8 +57,8 @@ def upload_dump(client, config, database, dump_file, logger):
     )
 
     try:
-        # The resumable API requires a file larger than 100 KB.
-        if size <= 100 * 1024:
+        # The resumable API requires a file larger than 800 MB.
+        if size <= 800 * 1024 * 1024:
             result = client.putFile(
                 bucket, object_key, str(dump_file)
             )
