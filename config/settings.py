@@ -32,26 +32,44 @@ def load_config():
 
 
 def load_snowflake_config():
-    """Snowflake-only runs do not require PG_* variables."""
+    """Accept existing Snowflake settings and use the proven DER key loader."""
     load_dotenv(Path(__file__).resolve().parents[1] / ".env")
-    def required(name):
-        value = os.getenv(name, '').strip()
-        if not value:
-            raise ValueError(f'Missing {name} in .env')
-        return value
-    databases = [x.strip() for x in required('SNOWFLAKE_DATABASES').split(',') if x.strip()]
+    def value(*names):
+        for name in names:
+            result = os.getenv(name, '').strip()
+            if result:
+                return result
+        return ''
+    def required(*names):
+        result = value(*names)
+        if not result:
+            raise ValueError('Missing ' + ' or '.join(names) + ' in .env')
+        return result
+    databases = [x.strip() for x in required(
+        'SNOWFLAKE_DATABASES', 'SNOWFLAKE_BRONZE_DATABASE').split(',') if x.strip()]
     connection = {
         'account': required('SNOWFLAKE_ACCOUNT'),
         'user': required('SNOWFLAKE_USER'),
-        'role': required('SNOWFLAKE_ROLE'),
-        'warehouse': required('SNOWFLAKE_WAREHOUSE'),
+        'warehouse': required('SNOWFLAKE_BRONZE_WAREHOUSE', 'SNOWFLAKE_WAREHOUSE'),
+        'database': databases[0],
         'session_parameters': {'TIMEZONE': 'UTC'},
         'arrow_number_to_decimal': True,
     }
-    if os.getenv('SNOWFLAKE_PRIVATE_KEY_FILE'):
-        connection['private_key_file'] = os.getenv('SNOWFLAKE_PRIVATE_KEY_FILE')
-        if os.getenv('SNOWFLAKE_PRIVATE_KEY_PASSWORD'):
-            connection['private_key_file_pwd'] = os.getenv('SNOWFLAKE_PRIVATE_KEY_PASSWORD')
+    if value('SNOWFLAKE_ROLE'):
+        connection['role'] = value('SNOWFLAKE_ROLE')
+    if value('SNOWFLAKE_SCHEMA'):
+        connection['schema'] = value('SNOWFLAKE_SCHEMA')
+    key_path = value('SNOWFLAKE_PRIVATE_KEY_PATH', 'SNOWFLAKE_PRIVATE_KEY_FILE')
+    if key_path:
+        from cryptography.hazmat.primitives import serialization
+        passphrase = os.getenv('SNOWFLAKE_PRIVATE_KEY_PASSWORD') or None
+        with open(key_path, 'rb') as stream:
+            key = serialization.load_pem_private_key(
+                stream.read(), password=passphrase.encode() if passphrase else None)
+        connection['private_key'] = key.private_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption())
     else:
         connection['password'] = required('SNOWFLAKE_PASSWORD')
     return {

@@ -56,4 +56,7 @@ docker build -t database-backup .
 docker run --rm --env-file .env -v "$PWD/logs:/app/logs" -v "$PWD/work:/app/work" database-backup /opt/backup-venv/bin/python main.py --source snowflake
 ```
 
-Mount the private key separately and set SNOWFLAKE_PRIVATE_KEY_FILE to its container path. Retain the work mount so failed exports survive container deletion.
+Mount the private key separately and set SNOWFLAKE_PRIVATE_KEY_PATH to its container path. Retain the work mount so failed exports survive container deletion.
+
+### Existing connection compatibility
+The loader accepts SNOWFLAKE_PRIVATE_KEY_PATH and SNOWFLAKE_BRONZE_WAREHOUSE. Private keys are loaded with cryptography and converted to DER PKCS8, matching the original working connection. An unencrypted key requires no password. SNOWFLAKE_PASSWORD is ignored when a private key is supplied. SNOWFLAKE_ROLE is optional. SNOWFLAKE_DATABASES controls multiple databases; if blank, SNOWFLAKE_BRONZE_DATABASE is used. SNOWFLAKE_URL is not needed. Existing alternate names PRIVATE_KEY_FILE and WAREHOUSE remain accepted. Prefer PATH and BRONZE_WAREHOUSE if both are set. No live authentication has been verified.
