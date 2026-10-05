@@ -2,3 +2,6 @@
 .venv/
 dumps/
 logs/
+
+work/
+.venv/

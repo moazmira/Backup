@@ -108,3 +108,53 @@ def upload_dump(client, config, database, dump_file, logger, dump_timestamp):
     dump_file.unlink()
     checkpoint_file.unlink(missing_ok=True)
     logger.info("[%s] Local dump deleted", database)
+
+
+# Shared file upload helpers used by Snowflake exports.
+import hashlib
+import time
+
+def checked(response, action):
+    if not 200 <= response.status < 300:
+        raise RuntimeError(f'{action}: HTTP {response.status}; code={response.errorCode}')
+    return response
+
+def digest(path):
+    h = hashlib.sha256()
+    with path.open('rb') as stream:
+        for chunk in iter(lambda: stream.read(8 * 1024 * 1024), b''):
+            h.update(chunk)
+    return h.hexdigest()
+
+def exists(client, bucket, key):
+    response = client.getObjectMetadata(bucket, key)
+    if response.status == 404:
+        return False
+    checked(response, 'Check object')
+    return True
+
+def upload_verified(client, bucket, key, path, logger):
+    # Multipart upload still creates ONE object, not separate Parquet parts.
+    for attempt in range(1, 4):
+        verification = path.with_suffix(path.suffix + '.verify')
+        try:
+            if path.stat().st_size <= 800 * 1024 * 1024:
+                response = client.putFile(bucket, key, str(path))
+            else:
+                response = client.uploadFile(bucket, key, str(path),
+                    partSize=512 * 1024 * 1024, taskNum=2, enableCheckpoint=False)
+            checked(response, 'Upload')
+            checked(client.getObject(bucket, key, downloadPath=str(verification)),
+                    'Verification download')
+            if verification.stat().st_size != path.stat().st_size or digest(verification) != digest(path):
+                raise RuntimeError('Uploaded object checksum mismatch')
+            logger.info('Verified obs://%s/%s SHA256=%s', bucket, key, digest(path))
+            return
+        except Exception:
+            if attempt == 3:
+                raise
+            logger.warning('Upload/verification retry %s for %s', attempt, path.name)
+            time.sleep(attempt * 2)
+        finally:
+            verification.unlink(missing_ok=True)
+

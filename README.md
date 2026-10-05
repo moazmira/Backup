@@ -79,3 +79,7 @@ mounted host directories. The container uses its own PostgreSQL 18
 `/usr/bin/pg_dump` even if `.env` has a host-specific `PG_DUMP_PATH`.
 The two `--env` arguments set the container's pg_dump path and Cairo time;
 PostgreSQL and OBS credentials still come from the mounted `.env` file.
+
+## Snowflake backups
+
+Use `python main.py --source snowflake`. PostgreSQL remains the default. See [SNOWFLAKE_BACKUP.md](SNOWFLAKE_BACKUP.md) for setup, naming, verification and restore considerations.

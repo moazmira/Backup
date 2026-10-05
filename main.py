@@ -1,13 +1,24 @@
-from config.settings import load_config
+import argparse
+
+from config.settings import load_config, load_snowflake_config
 from services.obs_storage import connect_to_obs, upload_dump
 from services.postgres_backup import create_dump
 from utils.logging_utils import setup_logger
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Database backups to Huawei OBS")
+    parser.add_argument('--source', choices=['postgres', 'snowflake'], default='postgres')
+    args = parser.parse_args()
     logger = setup_logger()
     client = None
     try:
+        if args.source == 'snowflake':
+            from services.snowflake_backup import backup_snowflake
+            config = load_snowflake_config()
+            client = connect_to_obs(config, logger)
+            backup_snowflake(client, config, logger)
+            return
         config = load_config()
         logger.info("Databases requested: %s", ", ".join(config["databases"]))
         client = connect_to_obs(config, logger)
