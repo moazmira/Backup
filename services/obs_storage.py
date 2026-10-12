@@ -1,5 +1,6 @@
 from obs import ObsClient
-
+import hashlib
+import time
 
 def connect_to_obs(config, logger):
     client = ObsClient(
@@ -22,6 +23,17 @@ def connect_to_obs(config, logger):
     return client
 
 
+def create_obs_folders(client, bucket, object_key):
+    parts = object_key.split("/")[:-1]
+    folder_key = ""
+
+    for part in parts:
+        folder_key += part + "/"
+        checked(
+            client.putContent(bucket, folder_key, content=b""),
+            f"Create folder {folder_key}",
+        )
+
 def upload_dump(client, config, database, dump_file, logger, dump_timestamp):
     # Use the same timestamp that was used to name the dump.
     object_key = (
@@ -30,6 +42,7 @@ def upload_dump(client, config, database, dump_file, logger, dump_timestamp):
     )
 
     bucket = config["obs_bucket"]
+    create_obs_folders(client, bucket, object_key)
     size = dump_file.stat().st_size
 
     # Keep this file beside the dump so another attempt can resume.
@@ -111,8 +124,6 @@ def upload_dump(client, config, database, dump_file, logger, dump_timestamp):
 
 
 # Shared file upload helpers used by Snowflake exports.
-import hashlib
-import time
 
 def checked(response, action):
     if not 200 <= response.status < 300:
@@ -135,6 +146,7 @@ def exists(client, bucket, key):
 
 def upload_verified(client, bucket, key, path, logger):
     # Multipart upload still creates ONE object, not separate Parquet parts.
+    create_obs_folders(client, bucket, key)
     for attempt in range(1, 4):
         verification = path.with_suffix(path.suffix + '.verify')
         try:
