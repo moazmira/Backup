@@ -1,7 +1,7 @@
 import argparse
-import sys
 
 from config.settings import load_obs_config, load_source_config
+from utils.logger import setup_logger
 
 
 def main():
@@ -9,19 +9,20 @@ def main():
     parser.add_argument("--source", choices=("postgres", "snowflake"), required=True)
     parser.add_argument("--connection", required=True)
     args = parser.parse_args()
+    logger = setup_logger()
     try:
-        print(f"[START] Reading {args.source} settings", flush=True)
+        logger.info("Reading %s settings", args.source)
         source_config = load_source_config(args.source, args.connection)
-        print(f"[OK] Connection selected: {args.connection}")
-        print(f"[OK] Databases: {', '.join(source_config['databases'])}")
-        print("[START] Reading OBS settings")
+        logger.info("Connection selected: %s", args.connection)
+        logger.info("Databases: %s", ", ".join(source_config["databases"]))
+        logger.info("Reading OBS settings")
         obs_config = load_obs_config()
-        print(f"[OK] OBS bucket: {obs_config['bucket']}")
-        print("[DONE] Settings structure validated. No network connections or backups performed.")
-        print("Placeholder values are examples; credentials and key file have not been verified.")
+        logger.info("OBS bucket: %s", obs_config["bucket"])
+        logger.info("Settings structure validated. No network connections or backups performed.")
+        logger.info("Placeholder values are examples; credentials and key file have not been verified.")
         return 0
     except (ValueError, OSError) as error:
-        print(f"[ERROR] {error}", file=sys.stderr)
+        logger.error("Settings validation failed: %s", error)
         return 1
 
 

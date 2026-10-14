@@ -15,7 +15,10 @@ These commands validate configuration structure only. Placeholder values pass
 structural validation; no credentials, private key, connectivity, database
 existence, or permissions are checked. No backups or uploads occur.
 
-- `main.py`: parses arguments, calls settings functions, prints safe summaries.
+- `main.py`: parses arguments, calls settings functions, logs safe summaries.
+- `utils/logger.py`: creates console and UTF-8 file handlers; one file per run in `logs/`.
+  INFO records progress; ERROR records validation failures. Timestamps use the
+  machine's local timezone without fractional seconds. No secrets are logged.
 - `config/settings.py`: reads JSON and validates required fields and types.
 - `secret/postgres.json`: named hosts and their databases.
 - `secret/snowflake.json`: named accounts and their databases; key authentication.
