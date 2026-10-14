@@ -1,7 +1,4 @@
-.env
-.venv/
-dumps/
-logs/
-
-work/
+secret/
+__pycache__/
+*.pyc
 .venv/

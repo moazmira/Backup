@@ -1,82 +1,59 @@
-import os
+import json
 from pathlib import Path
 
-from dotenv import load_dotenv
+SECRET_DIR = Path(__file__).resolve().parents[1] / "secret"
 
 
-def load_config():
-    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
-    host = os.environ["PG_HOST"].strip()
-    if not host or "/" in host or "\\" in host or host in (".", ".."):
-        raise ValueError("PG_HOST must be a valid single folder name")
-    databases = [
-        name.strip()
-        for name in os.environ["PG_DATABASES"].split(",")
-        if name.strip()
-    ]
-    if not databases:
-        raise ValueError("PG_DATABASES is empty")
-
-    return {
-        "host": host,
-        "port": os.environ["PG_PORT"],
-        "user": os.environ["PG_USER"],
-        "password": os.environ["PG_PASSWORD"],
-        "databases": databases,
-        "pg_dump": os.environ["PG_DUMP_PATH"],
-        "obs_bucket": os.environ["OBS_BUCKET"],
-        "obs_endpoint": os.environ["OBS_ENDPOINT"],
-        "obs_access_key": os.environ["OBS_ACCESS_KEY_ID"],
-        "obs_secret_key": os.environ["OBS_SECRET_ACCESS_KEY"],
-    }
+def read_json(filename):
+    path = SECRET_DIR / filename
+    try:
+        with path.open(encoding="utf-8") as stream:
+            data = json.load(stream)
+    except FileNotFoundError:
+        raise ValueError(f"Missing settings file: {path}") from None
+    except json.JSONDecodeError as error:
+        raise ValueError(f"Invalid JSON in {filename}, line {error.lineno}") from None
+    if not isinstance(data, dict):
+        raise ValueError(f"{filename} must contain a JSON object")
+    return data
 
 
-def load_snowflake_config():
-    """Accept existing Snowflake settings and use the proven DER key loader."""
-    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
-    def value(*names):
-        for name in names:
-            result = os.getenv(name, '').strip()
-            if result:
-                return result
-        return ''
-    def required(*names):
-        result = value(*names)
-        if not result:
-            raise ValueError('Missing ' + ' or '.join(names) + ' in .env')
-        return result
-    databases = [x.strip() for x in required(
-        'SNOWFLAKE_DATABASES', 'SNOWFLAKE_BRONZE_DATABASE').split(',') if x.strip()]
-    connection = {
-        'account': required('SNOWFLAKE_ACCOUNT'),
-        'user': required('SNOWFLAKE_USER'),
-        'warehouse': required('SNOWFLAKE_BRONZE_WAREHOUSE', 'SNOWFLAKE_WAREHOUSE'),
-        'database': databases[0],
-        'session_parameters': {'TIMEZONE': 'UTC'},
-        'arrow_number_to_decimal': True,
-    }
-    if value('SNOWFLAKE_ROLE'):
-        connection['role'] = value('SNOWFLAKE_ROLE')
-    if value('SNOWFLAKE_SCHEMA'):
-        connection['schema'] = value('SNOWFLAKE_SCHEMA')
-    key_path = value('SNOWFLAKE_PRIVATE_KEY_PATH', 'SNOWFLAKE_PRIVATE_KEY_FILE')
-    if key_path:
-        from cryptography.hazmat.primitives import serialization
-        passphrase = os.getenv('SNOWFLAKE_PRIVATE_KEY_PASSWORD') or None
-        with open(key_path, 'rb') as stream:
-            key = serialization.load_pem_private_key(
-                stream.read(), password=passphrase.encode() if passphrase else None)
-        connection['private_key'] = key.private_bytes(
-            encoding=serialization.Encoding.DER,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption())
-    else:
-        connection['password'] = required('SNOWFLAKE_PASSWORD')
-    return {
-        'snowflake_databases': databases,
-        'snowflake_connection': connection,
-        'obs_bucket': required('OBS_BUCKET'),
-        'obs_endpoint': required('OBS_ENDPOINT'),
-        'obs_access_key': required('OBS_ACCESS_KEY_ID'),
-        'obs_secret_key': required('OBS_SECRET_ACCESS_KEY'),
-    }
+def require_fields(settings, fields, label):
+    for field in fields:
+        value = settings.get(field)
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"{label}: {field} must be a non-empty string")
+
+
+def load_source_config(source, connection_name):
+    if source not in ("postgres", "snowflake"):
+        raise ValueError("Source must be postgres or snowflake")
+    connections = read_json(f"{source}.json")
+    if connection_name not in connections:
+        raise ValueError(f"Connection '{connection_name}' not found in {source}.json")
+    settings = connections[connection_name]
+    if not isinstance(settings, dict):
+        raise ValueError("Connection settings must be a JSON object")
+    fields = ("host", "user", "password") if source == "postgres" else (
+        "account", "user", "warehouse", "role", "private_key_file")
+    require_fields(settings, fields, source)
+    databases = settings.get("databases")
+    if not isinstance(databases, list) or not databases:
+        raise ValueError(f"{source}: databases must be a non-empty list")
+    if any(not isinstance(name, str) or not name.strip() for name in databases):
+        raise ValueError(f"{source}: each database must be a non-empty string")
+    if len(set(databases)) != len(databases):
+        raise ValueError(f"{source}: duplicate database names")
+    if source == "postgres":
+        port = settings.get("port")
+        if type(port) is not int or not 1 <= port <= 65535:
+            raise ValueError("postgres: port must be an integer between 1 and 65535")
+    elif not isinstance(settings.get("private_key_password", ""), str):
+        raise ValueError("snowflake: private_key_password must be a string")
+    return settings
+
+
+def load_obs_config():
+    settings = read_json("obs.json")
+    require_fields(settings, ("endpoint", "bucket", "access_key_id", "secret_access_key"), "OBS")
+    return settings

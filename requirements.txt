@@ -1,7 +1,0 @@
-python-dotenv
-esdk-obs-python
-snowflake-connector-python[pandas]>=4.0,<5
-pyarrow>=19,<22
-filelock>=3.16,<4
-tzdata
-cryptography>=44

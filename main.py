@@ -1,42 +1,29 @@
 import argparse
+import sys
 
-from config.settings import load_config, load_snowflake_config
-from services.obs_storage import connect_to_obs, upload_dump
-from services.postgres_backup import create_dump
-from utils.logging_utils import setup_logger
+from config.settings import load_obs_config, load_source_config
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Database backups to Huawei OBS")
-    parser.add_argument('--source', choices=['postgres', 'snowflake'], default='postgres')
+    parser = argparse.ArgumentParser(description="Step 1: validate backup settings only")
+    parser.add_argument("--source", choices=("postgres", "snowflake"), required=True)
+    parser.add_argument("--connection", required=True)
     args = parser.parse_args()
-    logger = setup_logger()
-    client = None
     try:
-        if args.source == 'snowflake':
-            from services.snowflake_backup import backup_snowflake
-            config = load_snowflake_config()
-            client = connect_to_obs(config, logger)
-            backup_snowflake(client, config, logger)
-            return
-        config = load_config()
-        logger.info("Databases requested: %s", ", ".join(config["databases"]))
-        client = connect_to_obs(config, logger)
-        for database in config["databases"]:
-            logger.info("[%s] Starting backup", database)
-            dump_file, dump_timestamp = create_dump(config, database, logger)
-            upload_dump(
-                client, config, database, dump_file, logger,
-                dump_timestamp=dump_timestamp,
-            )
-        logger.info("Run completed successfully: %d database(s)", len(config["databases"]))
-    except Exception:
-        logger.exception("Run failed")
-        raise SystemExit(1)
-    finally:
-        if client is not None:
-            client.close()
+        print(f"[START] Reading {args.source} settings", flush=True)
+        source_config = load_source_config(args.source, args.connection)
+        print(f"[OK] Connection selected: {args.connection}")
+        print(f"[OK] Databases: {', '.join(source_config['databases'])}")
+        print("[START] Reading OBS settings")
+        obs_config = load_obs_config()
+        print(f"[OK] OBS bucket: {obs_config['bucket']}")
+        print("[DONE] Settings structure validated. No network connections or backups performed.")
+        print("Placeholder values are examples; credentials and key file have not been verified.")
+        return 0
+    except (ValueError, OSError) as error:
+        print(f"[ERROR] {error}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

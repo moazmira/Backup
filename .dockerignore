@@ -1,9 +1,0 @@
-.env
-.venv/
-dumps/
-logs/
-__pycache__/
-*.zip
-
-work
-.venv
