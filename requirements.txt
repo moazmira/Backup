@@ -1,0 +1,5 @@
+psycopg2-binary>=2.9,<3
+snowflake-connector-python>=4.0,<5
+cryptography>=44
+esdk-obs-python
+certifi

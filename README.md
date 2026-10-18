@@ -1,30 +1,30 @@
-# Backup — step 1
+# Backup — step 2: connection checks
 
-Requires Python 3.10 or newer. No external packages required at this step.
-This is a separate fresh project, not a replacement of the existing backup.
-
-From this folder run:
+Python 3.10 or newer. Install in a virtual environment:
 
 ```bash
-python main.py --source postgres --connection production
-python main.py --source postgres --connection analytics
-python main.py --source snowflake --connection production
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python main.py --source postgres --connection production
+.venv/bin/python main.py --source snowflake --connection production
 ```
 
-These commands validate configuration structure only. Placeholder values pass
-structural validation; no credentials, private key, connectivity, database
-existence, or permissions are checked. No backups or uploads occur.
+Keep your existing secret JSON files. No secrets are included in the changes archive.
 
-- `main.py`: parses arguments, calls settings functions, logs safe summaries.
-- `utils/logger.py`: creates console and UTF-8 file handlers; one file per run in `logs/`.
-  INFO records progress; ERROR records validation failures. Timestamps use the
-  machine's local timezone without fractional seconds. No secrets are logged.
-- `config/settings.py`: reads JSON and validates required fields and types.
-- `secret/postgres.json`: named hosts and their databases.
-- `secret/snowflake.json`: named accounts and their databases; key authentication.
-- `secret/obs.json`: shared upload destination.
+- main.py: validates settings, checks the selected source, then checks OBS.
+- connections/postgres.py: connects to each configured database and reads database,
+  username and server version.
+- connections/snowflake.py: loads the PEM key as DER, connects, reads session context
+  and checks access to every configured database using USE DATABASE.
+- connections/obs.py: checks bucket access with listObjects(max_keys=1).
+- utils/logger.py: logs to console and one file per run in logs/.
 
-All credentials are examples. Replace them locally. In the connection step,
-relative private-key paths will be resolved against `secret/`. The key file is
-not included or opened at this step. The folder is excluded from Git; it is
-plain local storage, not encryption. Do not commit actual secrets.
+Relative Snowflake key paths resolve against secret/, independently of the working
+folder. Set private_key_file to your PEM key path. Keep private_key_password empty
+for an unencrypted key, or supply the key's passphrase.
+
+No backup, upload, delete, business-table query or data modification occurs.
+The OBS check confirms list access only; it does not prove upload/read permissions.
+Database connection checks do not prove backup permissions on every table.
+A failure stops the run with exit code 1, records the traceback and closes connections.
+Use real configuration before running; no live services were tested during creation.

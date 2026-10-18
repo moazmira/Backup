@@ -1,11 +1,14 @@
 import argparse
 
 from config.settings import load_obs_config, load_source_config
+from connections.obs import connect_obs
+from connections.postgres import connect_postgres
+from connections.snowflake import connect_snowflake
 from utils.logger import setup_logger
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Step 1: validate backup settings only")
+    parser = argparse.ArgumentParser(description="Step 2: check source and OBS connections only")
     parser.add_argument("--source", choices=("postgres", "snowflake"), required=True)
     parser.add_argument("--connection", required=True)
     args = parser.parse_args()
@@ -18,11 +21,32 @@ def main():
         logger.info("Reading OBS settings")
         obs_config = load_obs_config()
         logger.info("OBS bucket: %s", obs_config["bucket"])
-        logger.info("Settings structure validated. No network connections or backups performed.")
-        logger.info("Placeholder values are examples; credentials and key file have not been verified.")
+        if args.source == "postgres":
+            for database in source_config["databases"]:
+                connection = connect_postgres(source_config, database, logger)
+                try:
+                    logger.info("PostgreSQL connection check completed: %s", database)
+                finally:
+                    connection.close()
+                    logger.info("PostgreSQL connection closed: %s", database)
+        else:
+            connection = connect_snowflake(source_config, logger)
+            try:
+                logger.info("Snowflake connection check completed")
+            finally:
+                connection.close()
+                logger.info("Snowflake connection closed")
+
+        client = connect_obs(obs_config, logger)
+        try:
+            logger.info("OBS connection check completed")
+        finally:
+            client.close()
+            logger.info("OBS connection closed")
+        logger.info("All connection checks completed successfully")
         return 0
-    except (ValueError, OSError) as error:
-        logger.error("Settings validation failed: %s", error)
+    except Exception:
+        logger.exception("Connection check failed")
         return 1
 
 
