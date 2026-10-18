@@ -35,9 +35,10 @@ def connect_snowflake(settings, logger):
         warehouse=settings["warehouse"],
         role=settings["role"],
         private_key=private_key,
+        arrow_number_to_decimal=True,
         login_timeout=30,
         network_timeout=30,
-        session_parameters={"TIMEZONE": "UTC", "STATEMENT_TIMEOUT_IN_SECONDS": 30},
+        session_parameters={"TIMEZONE": "UTC", "STATEMENT_TIMEOUT_IN_SECONDS": 3600},
     )
     try:
         with connection.cursor() as cursor:

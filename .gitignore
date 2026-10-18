@@ -1,4 +1,6 @@
+secret/
 __pycache__/
 *.pyc
 .venv/
 logs/
+backups/
