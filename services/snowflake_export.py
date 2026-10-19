@@ -3,6 +3,9 @@ import json
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from dbqueries.snowflake import GET_DDL
+from utils.database import select_data
+
 
 def quote_identifier(name):
     return '"' + name.replace('"', '""') + '"'
@@ -57,9 +60,7 @@ def build_export_schema(columns):
 
 def export_ddl(connection, address, path, logger):
     logger.info("Creating SQL file: %s", path)
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT GET_DDL('TABLE', %s, TRUE)", (address,))
-        ddl = cursor.fetchone()[0]
+    ddl = select_data(connection, GET_DDL, (address,))[0][0]
     if not isinstance(ddl, str) or not ddl.strip():
         raise RuntimeError(f"Empty DDL for {address}")
     with path.open("x", encoding="utf-8") as stream:
@@ -71,9 +72,7 @@ def export_parquet(connection, address, path, logger):
     logger.info("Creating Parquet file: %s", path)
     if path.exists():
         raise FileExistsError(f"Export file already exists: {path}")
-    with connection.cursor() as cursor:
-        cursor.execute("DESC TABLE " + address)
-        columns = cursor.fetchall()
+    columns = select_data(connection, "DESC TABLE " + address)
     schema, expressions = build_export_schema(columns)
     temporary = path.with_suffix(".parquet.partial")
     rows = 0

@@ -36,19 +36,15 @@ def connect_snowflake(settings, logger):
         role=settings["role"],
         private_key=private_key,
         arrow_number_to_decimal=True,
-        login_timeout=30,
+        login_timeout=settings.get("connect_timeout", 30),
         network_timeout=30,
-        session_parameters={"TIMEZONE": "UTC", "STATEMENT_TIMEOUT_IN_SECONDS": 3600},
+        session_parameters={"TIMEZONE": "UTC", "STATEMENT_TIMEOUT_IN_SECONDS": settings.get("query_timeout", 3600)},
     )
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT CURRENT_USER(), CURRENT_ROLE(), CURRENT_WAREHOUSE()")
             user, role, warehouse = cursor.fetchone()
             logger.info("Snowflake connected: user=%s role=%s warehouse=%s", user, role, warehouse)
-            for database in settings["databases"]:
-                address = '"' + database.replace('"', '""') + '"'
-                cursor.execute("USE DATABASE " + address)
-                logger.info("Snowflake database accessible: %s", database)
         return connection
     except Exception:
         connection.close()

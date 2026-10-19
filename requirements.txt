@@ -1,7 +1,8 @@
 psycopg2-binary>=2.9,<3
 snowflake-connector-python[pandas]>=4.0,<5
 cryptography>=44
-esdk-obs-python
+esdk-obs-python>=3.26,<4
 certifi
 pyarrow>=19,<22
 tzdata
+filelock>=3.16,<4

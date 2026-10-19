@@ -4,20 +4,14 @@ def connect_obs(settings, logger):
 
     logger.info("Connecting to OBS bucket: %s", settings["bucket"])
     client = ObsClient(
-        access_key_id=settings["access_key_id"],
-        secret_access_key=settings["secret_access_key"],
-        server=settings["endpoint"],
-        timeout=30,
-        ssl_verify=certifi.where(),
+        access_key_id=settings["access_key_id"], secret_access_key=settings["secret_access_key"],
+        server=settings["endpoint"], timeout=settings.get("timeout", 60), ssl_verify=certifi.where(),
     )
     try:
         result = client.listObjects(settings["bucket"], max_keys=1)
-        if not 200 <= result.status < 300:
-            raise RuntimeError(
-                f"OBS bucket check failed: HTTP {result.status}; "
-                f"{result.errorCode}: {result.errorMessage}"
-            )
-        logger.info("OBS bucket accessible: %s (list permission verified)", settings["bucket"])
+        if result.status is None or not 200 <= result.status < 300:
+            raise RuntimeError(f"OBS connection failed: HTTP {result.status}; {result.errorCode}: {result.errorMessage}")
+        logger.info("OBS bucket accessible: %s", settings["bucket"])
         return client
     except Exception:
         client.close()

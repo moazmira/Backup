@@ -1,29 +1,30 @@
 import logging
 import sys
 from datetime import datetime
-from pathlib import Path
+from zoneinfo import ZoneInfo
+
+from config.settings import LOG_DIR
+
+CAIRO = ZoneInfo("Africa/Cairo")
+
+
+class CairoFormatter(logging.Formatter):
+    def formatTime(self, record, datefmt=None):
+        return datetime.fromtimestamp(record.created, CAIRO).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def setup_logger():
-    log_dir = Path(__file__).resolve().parents[1] / "logs"
-    log_dir.mkdir(exist_ok=True)
-    log_file = log_dir / f"{datetime.now():%Y%m%d_%H%M%S_%f}.log"
-
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    log_file = LOG_DIR / f"{datetime.now(CAIRO):%Y%m%d_%H%M%S_%f}.log"
     logger = logging.getLogger("backup")
     logger.setLevel(logging.INFO)
     logger.propagate = False
     for handler in logger.handlers[:]:
         logger.removeHandler(handler)
         handler.close()
-
-    formatter = logging.Formatter(
-        "%(asctime)s %(levelname)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-    )
-    file_handler = logging.FileHandler(log_file, encoding="utf-8")
-    console_handler = logging.StreamHandler(sys.stdout)
-    for handler in (file_handler, console_handler):
+    formatter = CairoFormatter("%(asctime)s %(levelname)s %(message)s")
+    for handler in (logging.FileHandler(log_file, encoding="utf-8"), logging.StreamHandler(sys.stdout)):
         handler.setFormatter(formatter)
         logger.addHandler(handler)
-
-    logger.info("Run started. Log file: %s", log_file)
+    logger.info("Run started. Cairo timezone. Log file: %s", log_file)
     return logger

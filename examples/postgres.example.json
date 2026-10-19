@@ -1,0 +1,19 @@
+{
+  "production": {
+    "host": "YOUR_POSTGRES_HOST",
+    "port": 5432,
+    "user": "YOUR_USER",
+    "password": "YOUR_PASSWORD",
+    "databases": ["postgres"],
+    "sslmode": "prefer",
+    "connect_timeout": 30,
+    "dump_timeout": 21600
+  },
+  "analytics": {
+    "host": "YOUR_SECOND_HOST",
+    "port": 5432,
+    "user": "YOUR_USER",
+    "password": "YOUR_PASSWORD",
+    "databases": ["analytics"]
+  }
+}

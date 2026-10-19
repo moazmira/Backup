@@ -4,3 +4,7 @@ __pycache__/
 .venv/
 logs/
 backups/
+.env
+dumps/
+work/
+.env.save

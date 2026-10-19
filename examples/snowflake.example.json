@@ -1,0 +1,13 @@
+{
+  "production": {
+    "account": "YOUR_ACCOUNT",
+    "user": "YOUR_USER",
+    "warehouse": "YOUR_WAREHOUSE",
+    "role": "YOUR_ROLE",
+    "private_key_file": "rsa_key.p8",
+    "private_key_password": "",
+    "databases": ["BRONZE"],
+    "connect_timeout": 30,
+    "query_timeout": 3600
+  }
+}
