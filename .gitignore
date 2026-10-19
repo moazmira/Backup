@@ -1,10 +1,10 @@
+.env
+.env.*
+!.env.example
 secret/
+backups/
+logs/
+.venv/
 __pycache__/
 *.pyc
-.venv/
-logs/
-backups/
-.env
-dumps/
-work/
-.env.save
+.pytest_cache/

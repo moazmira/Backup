@@ -1,14 +1,17 @@
+import logging
 from pathlib import Path
 
-from config.settings import SECRET_DIR
+from config.settings import ROOT
+
+logger = logging.getLogger("backup")
 
 
-def load_private_key(settings, logger):
+def load_private_key(settings):
     from cryptography.hazmat.primitives import serialization
 
     path = Path(settings["private_key_file"]).expanduser()
     if not path.is_absolute():
-        path = SECRET_DIR / path
+        path = ROOT / path
     logger.info("Loading Snowflake private key")
     password = settings.get("private_key_password") or None
     with path.open("rb") as stream:
@@ -24,27 +27,22 @@ def load_private_key(settings, logger):
     return private_key
 
 
-def connect_snowflake(settings, logger):
+def connect_snowflake(settings):
     import snowflake.connector
 
-    private_key = load_private_key(settings, logger)
+    private_key = load_private_key(settings)
     logger.info("Connecting to Snowflake: account=%s", settings["account"])
     connection = snowflake.connector.connect(
-        account=settings["account"],
-        user=settings["user"],
-        warehouse=settings["warehouse"],
-        role=settings["role"],
-        private_key=private_key,
-        arrow_number_to_decimal=True,
-        login_timeout=settings.get("connect_timeout", 30),
-        network_timeout=30,
+        account=settings["account"], user=settings["user"], warehouse=settings["warehouse"],
+        role=settings["role"], private_key=private_key, arrow_number_to_decimal=True,
+        login_timeout=settings.get("connect_timeout", 30), network_timeout=30,
         session_parameters={"TIMEZONE": "UTC", "STATEMENT_TIMEOUT_IN_SECONDS": settings.get("query_timeout", 3600)},
     )
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT CURRENT_USER(), CURRENT_ROLE(), CURRENT_WAREHOUSE()")
             user, role, warehouse = cursor.fetchone()
-            logger.info("Snowflake connected: user=%s role=%s warehouse=%s", user, role, warehouse)
+        logger.info("Snowflake connected: user=%s role=%s warehouse=%s", user, role, warehouse)
         return connection
     except Exception:
         connection.close()
