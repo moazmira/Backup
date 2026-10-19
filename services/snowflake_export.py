@@ -3,7 +3,7 @@ import json
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from dbqueries.snowflake import GET_DDL
+from queries.snowflake import GET_DDL
 from utils.database import select_data
 
 

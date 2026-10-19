@@ -1,4 +1,4 @@
-from dbqueries.snowflake import TABLES
+from queries.snowflake import TABLES
 from services.snowflake_export import export_ddl, export_parquet, quote_identifier
 from storage.obs import transfer_files
 from utils.database import select_data
