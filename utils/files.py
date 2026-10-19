@@ -12,8 +12,9 @@ def cairo_now():
 
 
 def path_component(name):
-    return quote(name, safe="_").replace(".", "%2E")
-
+    if name in (".", ".."):
+        return name.replace(".", "%2E")
+    return quote(name, safe="_.")
 
 def create_run(source):
     now = cairo_now()
