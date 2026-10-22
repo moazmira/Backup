@@ -28,7 +28,9 @@ def main():
 
         BACKUP_DIR.mkdir(parents=True, exist_ok=True)
         
-        with FileLock(str(BACKUP_DIR / ".backup.lock"), timeout=0):
+        #postgres.lock and snowflake.lock are used to prevent concurrent backups of the same source
+        lock_file = BACKUP_DIR / f".{args.source}.lock"
+        with FileLock(str(lock_file), timeout=0):
             client = connect_obs(obs_settings)
 
         try:
