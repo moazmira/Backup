@@ -1,9 +1,14 @@
+# PostgreSQL connection and version check
 psycopg2-binary>=2.9,<3
+# Snowflake Arrow support requires the pandas extra internally
 snowflake-connector-python[pandas]>=4.8,<5
-cryptography>=44
-esdk-obs-python>=3.26,<4
-certifi
+# Write Parquet files
 pyarrow>=19,<22
-tzdata
-filelock>=3.16,<4
+# Huawei OBS upload/download
+esdk-obs-python>=3.26,<4
+# Verify OBS TLS certificates
+certifi
+# Read .env
 python-dotenv>=1,<2
+# Prevent concurrent runs
+filelock>=3.16,<4

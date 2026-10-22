@@ -1,12 +1,22 @@
 import logging
 
+import psycopg2
+
 logger = logging.getLogger("backup")
 
 
 def connect_postgres(settings, database):
-    import psycopg2
     logger.info('Connecting to PostgreSQL: host=%s database=%s', settings['host'], database)
-    connection = psycopg2.connect(host=settings['host'], port=settings['port'], user=settings['user'], password=settings['password'], dbname=database, sslmode=settings.get('sslmode', 'prefer'), connect_timeout=settings.get('connect_timeout', 30), options='-c statement_timeout=30000')
+    connection = psycopg2.connect(
+        host=settings["host"],
+        port=settings["port"],
+        user=settings["user"],
+        password=settings["password"],
+        dbname=database,
+        sslmode=settings.get("sslmode", "prefer"),
+        connect_timeout=settings.get("connect_timeout", 30),
+        options="-c statement_timeout=30000",
+    )
     try:
         connection.autocommit = True
         with connection.cursor() as cursor:
@@ -17,3 +27,4 @@ def connect_postgres(settings, database):
     except Exception:
         connection.close()
         raise
+

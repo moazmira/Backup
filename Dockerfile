@@ -8,9 +8,7 @@ RUN python3 -m venv /opt/backup-venv \
     && /opt/backup-venv/bin/pip install --no-cache-dir -r requirements.txt
 COPY config config
 COPY connections connections
-COPY dbqueries dbqueries
 COPY services services
-COPY storage storage
 COPY utils utils
 COPY main.py .
 ENV TZ=Africa/Cairo PG_DUMP_PATH=/usr/bin/pg_dump PYTHONUNBUFFERED=1
