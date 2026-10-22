@@ -29,6 +29,11 @@ def save_table_files(connection, database, schema, table, run_dir):
 
     rows = save_table_parquet(connection, address, parquet_file)
 
+    
+    print("SQL file:", sql_file, flush=True)
+    print("Parquet file:", parquet_file, flush=True)
+    print("Exported rows:", rows, flush=True)
+
     return [sql_file, parquet_file], rows
 
 

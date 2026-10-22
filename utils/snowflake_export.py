@@ -36,6 +36,9 @@ def get_tables(connection, database):
 
     if not tables:
         logger.warning("No visible base tables in %s; no data exported", database)
+    
+    print("Tables sample:", tables[:5], flush=True)
+
     return tables
 
 
@@ -59,6 +62,9 @@ def build_select_query(connection, address):
 
     query = "SELECT " + ", ".join(expressions) + " FROM " + address
 
+    print("Select query:", query, flush=True)
+    print("Columns sample:", columns[:5], flush=True)
+
     return {
         "query": query,
         "columns": columns,
@@ -71,7 +77,11 @@ def save_table_sql(connection, address, path):
     logger.info("Creating SQL file: %s", path)
 
     ddl = select_data(connection, GET_DDL, (address,))[0][0]
-    
+
+
+    print("Table:", address, flush=True)
+    print("Table SQL:", ddl, flush=True)
+
     with path.open("x", encoding="utf-8") as stream:
         stream.write(ddl.rstrip() + "\n")
     logger.info("SQL file created: %s", path)
@@ -111,6 +121,13 @@ def save_table_parquet(connection, address, path):
                         continue
 
                     if writer is None:
+
+                        print("Table:", address, flush=True)
+                        print(
+                            "Data sample:",
+                            batch.slice(0, 5).to_pylist(),
+                            flush=True,
+                        )
                         column_types = set_numeric_column_types(
                             batch.schema, columns
                         )

@@ -38,5 +38,11 @@ def create_dump(settings, database, path, pg_dump):
     run_tool(command, settings, env)
     if not path.is_file() or path.stat().st_size == 0:
         raise RuntimeError("pg_dump produced an empty or missing file")
+
+    
+    print("Database:", database, flush=True)
+    print("Dump file:", path, flush=True)
+    print("Dump size (bytes):", path.stat().st_size, flush=True)
+    
     logger.info("Dump created: %s bytes=%d", path, path.stat().st_size)
 

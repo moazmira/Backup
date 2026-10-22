@@ -20,6 +20,10 @@ def check_uploaded_size(client, bucket, key, path):
     local_size = path.stat().st_size
     uploaded_size = int(metadata.body.contentLength)
 
+    print("OBS file:", key, flush=True)
+    print("Local size (bytes):", local_size, flush=True)
+    print("Uploaded size (bytes):", uploaded_size, flush=True)
+
     if uploaded_size != local_size:
         return 0
 
@@ -53,6 +57,8 @@ def upload_file(client, settings, key, path):
 
     if size_matches == 0:
         raise RuntimeError(f"Uploaded size mismatch: {key}")
+    
+    print("Upload successful:", key, flush=True)
 
     return 1
 
