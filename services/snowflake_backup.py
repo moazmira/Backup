@@ -1,19 +1,20 @@
 import logging
 
+from tomlkit import table
+
 from connections.snowflake import connect_snowflake
 
 from utils.backup_paths import create_run
 from utils.obs_upload import transfer_files
 from utils.snowflake_export import save_table_sql, save_table_parquet, get_tables
-from utils.snowflake_export import quote_identifier
 
 logger = logging.getLogger("backup")
 
 
 def save_table_files(connection, database, schema, table, run_dir):
     
-    address = f"{quote_identifier(database)}.{quote_identifier(schema)}.{quote_identifier(table)}"
-    
+    address = f'"{database}"."{schema}"."{table}"'    
+
     folder = run_dir / database / schema
     
     folder.mkdir(parents=True, exist_ok=True)
